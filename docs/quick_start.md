@@ -26,7 +26,7 @@ PaddleX的所有模型训练和预测均只涉及到5个API接口，分别是
 在本示例，通过如下`train.py`代码进行训练, 训练环境为1张Tesla P40 GPU卡。  
 
 ### 3.1 定义`transforms`数据处理流程
-由于训练时数据增强操作的加入，因此模型在训练和验证过程中，数据处理流程需要分别进行定义。如下所示，代码在`train_transforms`中加入了[RandomCrop](apis/transforms/cls_transforms.html#RandomCrop)和[RandomHorizontalFlip](apis/transforms/cls_transforms.html#RandomHorizontalFlip)两种数据增强方式
+由于训练时数据增强操作的加入，因此模型在训练和验证过程中，数据处理流程需要分别进行定义。如下所示，代码在`train_transforms`中加入了[RandomCrop](apis/transforms/cls_transforms.html#RandomCrop)和[RandomHorizontalFlip](apis/transforms/cls_transforms.html#RandomHorizontalFlip)两种数据增强方式, `transforms`的使用可以查阅[transforms API文档](./apis/transforms/cls_transforms.md)
 ```
 from paddlex.cls import transforms
 train_transforms = transforms.Compose([
@@ -41,7 +41,8 @@ eval_transforms = transforms.Compose([
 ])
 ```
 
-> 定义数据集，`pdx.datasets.ImageNet`表示读取ImageNet格式的分类数据集
+### 3.2 定义`dataset`加载数据集
+定义数据集，`pdx.datasets.ImageNet`表示读取ImageNet格式的分类数据集，用户可分别查阅[数据集格式说明](datasets.md)和[数据集datasets API文档](apis/datasets/index.html)了解更多相关的使用方式。
 ```
 train_dataset = pdx.datasets.ImageNet(
     data_dir='vegetables_cls',
@@ -55,11 +56,17 @@ eval_dataset = pdx.datasets.ImageNet(
     label_list='vegetables_cls/labels.txt',
     transforms=eval_transforms)
 ```
-> 模型训练
+### 3.3 定义使用的模型
+在本示例中使用了MobileNetV3模型蒸馏结构，其预训练权重采用蒸馏方式学习得到，相对比原MobileNetV3，具有更高的精度。想使用其它的分类模型？[点击了解](apis/models/classification.md)PaddleX的更多分类模型!
 
 ```
 num_classes = len(train_dataset.labels)
-model = pdx.cls.MobileNetV2(num_classes=num_classes)
+model = pdx.cls.MobileNetV3_small_ssld(num_classes=num_classes)
+```
+
+### 3.4 开始训练
+调用`train`接口，即可开始模型训练。关于训练过程的相关参数含义，可查阅[分类模型训练API文档](apis/models/classification.html#train)。
+```
 model.train(num_epochs=10,
             train_dataset=train_dataset,
             train_batch_size=32,
@@ -70,19 +77,19 @@ model.train(num_epochs=10,
             use_vdl=True)
 ```
 
-## 3. 模型训练
+## 3.5 模型训练
 > `train.py`与解压后的数据集目录`vegetables_cls`放在同一目录下，在此目录下运行`train.py`即可开始训练。如果您的电脑上有GPU，这将会在10分钟内训练完成，如果为CPU也大概会在30分钟内训练完毕。
 ```
 python train.py
 ```
 ## 4. 训练过程中查看训练指标
-> 模型在训练过程中，所有的迭代信息将以标注输出流的形式，输出到命令执行的终端上，用户也可通过visualdl以可视化的方式查看训练指标的变化，通过如下方式启动visualdl后，在浏览器打开https://0.0.0.0:8001即可。
+> 模型在训练过程中，所有的迭代信息将以标注输出流的形式，输出到命令执行的终端上，用户也可通过visualdl以可视化的方式查看训练指标的变化，通过如下方式启动visualdl后，在浏览器打开https://0.0.0.0:8001(或https://localhost:8001)即可。
 ```
 visualdl --logdir output/mobilenetv2/vdl_log --port 8000
 ```
 ![](./images/vdl1.jpg)
 ## 5. 训练完成使用模型进行测试
-> 如使用训练过程中第8轮保存的模型进行测试
+> 如使用训练过程中第8轮保存的模型进行测试（如使用jupyter notebook, 请结束之前的训练脚本后再执行如下代码）
 ```
 import paddlex as pdx
 model = pdx.load_model('output/mobilenetv2/epoch_8')
